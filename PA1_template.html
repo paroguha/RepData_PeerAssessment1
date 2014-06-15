@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=9" >
+
+<title>Title: PA1_template (Peer Assessment1 for reproducible research)</title>
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 12px;
+   margin: 8px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 { 
+   font-size:2.2em; 
+}
+
+h2 { 
+   font-size:1.8em; 
+}
+
+h3 { 
+   font-size:1.4em; 
+}
+
+h4 { 
+   font-size:1.0em; 
+}
+
+h5 { 
+   font-size:0.9em; 
+}
+
+h6 { 
+   font-size:0.8em; 
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre {	
+   margin-top: 0;
+   max-width: 95%;
+   border: 1px solid #ccc;
+   white-space: pre-wrap;
+}
+
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code.r, code.cpp {
+   background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * { 
+      background: transparent !important; 
+      color: black !important; 
+      filter:none !important; 
+      -ms-filter: none !important; 
+   }
+
+   body { 
+      font-size:12pt; 
+      max-width:100%; 
+   }
+       
+   a, a:visited { 
+      text-decoration: underline; 
+   }
+
+   hr { 
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote { 
+      padding-right: 1em; 
+      page-break-inside: avoid; 
+   }
+
+   tr, img { 
+      page-break-inside: avoid; 
+   }
+
+   img { 
+      max-width: 100% !important; 
+   }
+
+   @page :left { 
+      margin: 15mm 20mm 15mm 10mm; 
+   }
+     
+   @page :right { 
+      margin: 15mm 10mm 15mm 20mm; 
+   }
+
+   p, h2, h3 { 
+      orphans: 3; widows: 3; 
+   }
+
+   h2, h3 { 
+      page-break-after: avoid; 
+   }
+}
+
+</style>
+
+
+
+
+
+</head>
+
+<body>
+<h1>Title: PA1_template (Peer Assessment1 for reproducible research)</h1>
+
+<p>This is Peer Assessment1 for the Reproducible Research course. The data is collected from a personal activity device of an anonymous individual from October through  November, 2012 monitoring the number of steps taken in 5 minute intervals each day. </p>
+
+<h2>Loading and processing the data</h2>
+
+<pre><code class="r read_data, echo=TRUE">library(ggplot2) # we shall use ggplot2 for plotting figures
+
+# download and read the data, convert columns for convenience
+read_data &lt;- function() {
+    fname = &quot;activity.zip&quot;
+    source_url = &quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip&quot;
+    if(!file.exists(fname)) {
+        download.file(source_url, destfile=fname, method=&quot;curl&quot;)
+    }
+    con &lt;- unz(fname, &quot;activity.csv&quot;)
+    tbl &lt;- read.csv(con, header=T, colClasses=c(&quot;numeric&quot;, &quot;character&quot;, &quot;numeric&quot;))
+    tbl$interval &lt;- factor(tbl$interval)
+    tbl$date &lt;- as.Date(tbl$date, format=&quot;%Y-%m-%d&quot;)
+    tbl
+}
+tbl &lt;- read_data()
+</code></pre>
+
+<p>Summarize data</p>
+
+<pre><code class="r examine_data, echo=TRUE">summary(tbl)
+str(tbl)
+</code></pre>
+
+<p>##What is mean total number of steps taken per day?</p>
+
+<p>Histogram of the daily total number of steps taken including the mean and median of the daily total steps.</p>
+
+<pre><code class="r steps_per_day, echo=TRUE">calc_steps_per_day &lt;- function(tbl) {
+    steps_per_day &lt;- aggregate(steps ~ date, tbl, sum)
+    colnames(steps_per_day) &lt;- c(&quot;date&quot;, &quot;steps&quot;)
+    steps_per_day
+
+}
+
+plot_steps_per_day &lt;- function(steps_per_day, mean_steps, median_steps) {
+    col_labels=c(paste(&quot;Mean:&quot;, mean_steps), paste(&quot;Median:&quot;, median_steps))
+    cols = c(&quot;green&quot;, &quot;yellow&quot;)
+
+    ggplot(steps_per_day, aes(x=steps)) + 
+        geom_histogram(fill=&quot;steelblue&quot;, binwidth=1500) + 
+        geom_point(aes(x=mean_steps, y=0, color=&quot;green&quot;), size=4, shape=15) + 
+        geom_point(aes(x=median_steps, y=0, color=&quot;yellow&quot;), size=4, shape=15) + 
+        scale_color_manual(name=element_blank(), labels=col_labels, values=cols) + 
+        labs(title=&quot;Histogram of Steps Taken per Day&quot;, x=&quot;Number of Steps&quot;, y=&quot;Count&quot;) + 
+        theme_bw() + theme(legend.position = &quot;bottom&quot;)    
+}
+
+steps_per_day &lt;- calc_steps_per_day(tbl)
+mean_steps = round(mean(steps_per_day$steps), 2)
+median_steps = round(median(steps_per_day$steps), 2)
+plot_steps_per_day(steps_per_day, mean_steps, median_steps)
+</code></pre>
+
+<p><strong>For the total number of steps taken per day:</strong><br/>
+<strong><code>r paste(&quot;Mean:&quot;, mean_steps)</code>**
+**<code>r paste(&quot;Median:&quot;, median_steps)</code></strong></p>
+
+<h2>What is the average daily activity pattern?</h2>
+
+<p>Plot of the average daily activity pattern.</p>
+
+<pre><code class="r steps_per_interval, echo=TRUE">calc_steps_per_interval &lt;- function(tbl) {
+    steps_pi &lt;- aggregate(tbl$steps, by=list(interval=tbl$interval),
+                          FUN=mean, na.rm=T)
+    # convert to integers for plotting
+    steps_pi$interval &lt;- as.integer(levels(steps_pi$interval)[steps_pi$interval])
+    colnames(steps_pi) &lt;- c(&quot;interval&quot;, &quot;steps&quot;)
+    steps_pi
+
+}
+
+plot_activity_pattern &lt;- function(steps_per_interval, max_step_interval) {
+    col_labels=c(paste(&quot;Interval with Maximum Activity: &quot;, max_step_interval))
+    cols = c(&quot;red&quot;)
+
+    ggplot(steps_per_interval, aes(x=interval, y=steps)) +   
+        geom_line(color=&quot;steelblue&quot;, size=1) +  
+        geom_point(aes(x=max_step_interval, y=0, color=&quot;red&quot;), size=4, shape=15) +  
+        scale_color_manual(name=element_blank(), labels=col_labels, values=cols) +     
+        labs(title=&quot;Average Daily Activity Pattern&quot;, x=&quot;Interval&quot;, y=&quot;Number of steps&quot;) +  
+        theme_bw() + theme(legend.position = &quot;bottom&quot;)
+}
+
+steps_per_interval &lt;- calc_steps_per_interval(tbl)
+max_step_interval &lt;- steps_per_interval[which.max(steps_per_interval$steps),]$interval
+
+plot_activity_pattern(steps_per_interval, max_step_interval)
+
+</code></pre>
+
+<p>The <strong><code>r max_step_interval</code><sup>th</sup> interval</strong> has the maximum activity on the average.</p>
+
+<h2>Imputing missing values</h2>
+
+<p>Missing values are replaced by the mean values. </p>
+
+<pre><code class="r impute_data, echo=TRUE">impute_means &lt;- function(tbl, defaults) {
+    na_indices &lt;- which(is.na(tbl$steps))
+    defaults &lt;- steps_per_interval
+    na_replacements &lt;- unlist(lapply(na_indices, FUN=function(idx){
+        interval = tbl[idx,]$interval
+        defaults[defaults$interval == interval,]$steps
+        }))
+    imp_steps &lt;- tbl$steps
+    imp_steps[na_indices] &lt;- na_replacements
+    imp_steps
+}
+complete_tbl &lt;- data.frame(  
+    steps = impute_means(tbl, steps_per_interval),  
+    date = tbl$date,  
+    interval = tbl$interval)
+</code></pre>
+
+<p>Histogram of the daily total number of steps With the imputed dataset.</p>
+
+<pre><code class="r complete_steps_per_day, echo=TRUE">complete_steps_per_day &lt;- calc_steps_per_day(complete_tbl)
+complete_mean_steps = round(mean(complete_steps_per_day$steps), 2)
+complete_median_steps = round(median(complete_steps_per_day$steps), 2)
+plot_steps_per_day(complete_steps_per_day, complete_mean_steps, complete_median_steps)
+
+
+</code></pre>
+
+<p>Although mean value remains unchanghed, the median has shifted closer to the mean.</p>
+
+<h2>Are there differences in activity patterns between weekdays and weekends?</h2>
+
+<p>We do this comparison with the table with filled-in missing values.</p>
+
+<ol>
+<li>Augment the table with a column that indicates the day of the week</li>
+<li>Subset the table into two parts - weekends (Saturday and Sunday) and weekdays (Monday through Friday).</li>
+<li>Tabulate the average steps per interval for each dataset.</li>
+<li>Plot the two datasets side by side for comparison.</li>
+</ol>
+
+<pre><code class="r weekday_compare, echo=TRUE">calc_day_of_week_data &lt;- function(tbl) {
+    tbl$weekday &lt;- as.factor(weekdays(tbl$date))
+    weekend_data &lt;- subset(tbl, weekday %in% c(&quot;Saturday&quot;,&quot;Sunday&quot;))
+    weekday_data &lt;- subset(tbl, !weekday %in% c(&quot;Saturday&quot;,&quot;Sunday&quot;))
+
+    weekend_spi &lt;- calc_steps_per_interval(weekend_data)
+    weekday_spi &lt;- calc_steps_per_interval(weekday_data)
+
+    weekend_spi$dayofweek &lt;- rep(&quot;weekend&quot;, nrow(weekend_spi))
+    weekday_spi$dayofweek &lt;- rep(&quot;weekday&quot;, nrow(weekday_spi))
+
+    day_of_week_data &lt;- rbind(weekend_spi, weekday_spi)
+    day_of_week_data$dayofweek &lt;- as.factor(day_of_week_data$dayofweek)
+    day_of_week_data
+}
+plot_day_of_week_comparison &lt;- function(dow_data) {
+    ggplot(dow_data, 
+        aes(x=interval, y=steps)) + 
+        geom_line(color=&quot;steelblue&quot;, size=1) + 
+        facet_wrap(~ dayofweek, nrow=2, ncol=1) +
+        labs(x=&quot;Interval&quot;, y=&quot;Number of steps&quot;) +
+        theme_bw()
+}
+day_of_week_data &lt;- calc_day_of_week_data(complete_tbl)
+plot_day_of_week_comparison(day_of_week_data)
+</code></pre>
+
+<p>Activity on the weekends tends to be more spread out compared to the weekdays since weekends are more adhoc than weekdays with regular work schedule.</p>
+
+</body>
+
+</html>
+
